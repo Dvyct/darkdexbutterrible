@@ -4,75 +4,95 @@ gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
 -- Create a function to toggle the visibility of children
 local function toggleChildrenVisibility(listItem)
-	local children = listItem:GetChildren()
-	for _, child in ipairs(children) do
-		if child:IsA("Frame") and child.Name == "ChildrenContainer" then
-			child.Visible = not child.Visible
-		end
-	end
+    local children = listItem:GetChildren()
+    for _, child in ipairs(children) do
+        if child:IsA("Frame") and child.Name == "ChildrenContainer" then
+            child.Visible = not child.Visible
+            -- Adjust layout if showing children
+            if child.Visible then
+                for _, sibling in ipairs(listItem.Parent:GetChildren()) do
+                    if sibling.LayoutOrder > listItem.LayoutOrder then
+                        sibling.Position = UDim2.new(sibling.Position.X.Scale, sibling.Position.X.Offset, sibling.Position.Y.Scale, sibling.Position.Y.Offset + child.AbsoluteSize.Y)
+                    end
+                end
+            else
+                -- Reset layout if hiding children
+                for _, sibling in ipairs(listItem.Parent:GetChildren()) do
+                    if sibling.LayoutOrder > listItem.LayoutOrder then
+                        sibling.Position = UDim2.new(sibling.Position.X.Scale, sibling.Position.X.Offset, sibling.Position.Y.Scale, sibling.Position.Y.Offset - child.AbsoluteSize.Y)
+                    end
+                end
+            end
+        end
+    end
 end
 
 -- Create a function to update the button text
 local function updateButtonText(button, isVisible)
-	button.Text = isVisible and "<" or ">"
+    button.Text = isVisible and "<" or ">"
 end
 
 -- Recursive function to create GUI list for the hierarchy of objects in the workspace
-local function createListHierarchy(object, parent, indent)
-	indent = indent or 0
+local function createListHierarchy(object, parent, indent, layoutOrder)
+    indent = indent or 0
+    layoutOrder = layoutOrder or 0
 
-	-- Create a BoxFrame to hold the list item
-	local listItem = Instance.new("Frame")
-	listItem.Name = "ListItem"
-	listItem.Size = UDim2.new(1, 0, 0, 20)
-	listItem.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	listItem.Parent = parent
+    -- Create a BoxFrame to hold the list item
+    local listItem = Instance.new("Frame")
+    listItem.Name = "ListItem"
+    listItem.Size = UDim2.new(1, 0, 0, 20)
+    listItem.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    listItem.Parent = parent
+    listItem.LayoutOrder = layoutOrder
 
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Name = "NameLabel"
-	nameLabel.Size = UDim2.new(1, -20, 1, 0)
-	nameLabel.Position = UDim2.new(0, 20 * indent, 0, 0)
-	nameLabel.Text = string.rep("  ", indent) .. object.Name
-	nameLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.Parent = listItem
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Name = "NameLabel"
+    nameLabel.Size = UDim2.new(1, -20, 1, 0)
+    nameLabel.Position = UDim2.new(0, 20 * indent, 0, 0)
+    nameLabel.Text = string.rep("  ", indent) .. object.Name
+    nameLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Parent = listItem
 
-	-- Check if the object has children
-	local children = object:GetChildren()
-	if #children > 0 then
-		-- If it has children, create a button to toggle their visibility
-		local toggleButton = Instance.new("TextButton")
-		toggleButton.Name = "ToggleButton"
-		toggleButton.Size = UDim2.new(0, 20, 0, 20)
-		toggleButton.Position = UDim2.new(0, 20 * (indent + 1), 0, 0)
-		toggleButton.Text = ">"
-		toggleButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-		toggleButton.BackgroundTransparency = 1
-		toggleButton.Parent = listItem
-		toggleButton.MouseButton1Click:Connect(function()
-			toggleChildrenVisibility(listItem)
-			updateButtonText(toggleButton, listItem.ChildrenContainer.Visible)
-		end)
+    -- Check if the object has children
+    local children = object:GetChildren()
+    if #children > 0 then
+        -- If it has children, create a button to toggle their visibility
+        local toggleButton = Instance.new("TextButton")
+        toggleButton.Name = "ToggleButton"
+        toggleButton.Size = UDim2.new(0, 20, 0, 20)
+        toggleButton.Position = UDim2.new(0, 20 * (indent + 1), 0, 0)
+        toggleButton.Text = ">"
+        toggleButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+        toggleButton.BackgroundTransparency = 1
+        toggleButton.Parent = listItem
+        toggleButton.MouseButton1Click:Connect(function()
+            toggleChildrenVisibility(listItem)
+            updateButtonText(toggleButton, listItem.ChildrenContainer.Visible)
+        end)
 
-		-- Create a container for children
-		local childrenContainer = Instance.new("Frame")
-		childrenContainer.Name = "ChildrenContainer"
-		childrenContainer.Size = UDim2.new(1, 0, 0, 0)
-		childrenContainer.Position = UDim2.new(0, 20, 0, 20)
-		childrenContainer.BackgroundTransparency = 1
-		childrenContainer.Visible = false
-		childrenContainer.Parent = listItem
+        -- Create a container for children
+        local childrenContainer = Instance.new("Frame")
+        childrenContainer.Name = "ChildrenContainer"
+        childrenContainer.Size = UDim2.new(1, 0, 0, 0)
+        childrenContainer.Position = UDim2.new(0, 20, 0, 20)
+        childrenContainer.BackgroundTransparency = 1
+        childrenContainer.Visible = false
+        childrenContainer.Parent = listItem
 
-		-- Add UIListLayout to the container
-		local listLayout = Instance.new("UIListLayout")
-		listLayout.Parent = childrenContainer
-		listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        -- Add UIListLayout to the container
+        local listLayout = Instance.new("UIListLayout")
+        listLayout.Parent = childrenContainer
+        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-		-- Recursively create GUI list for children
-		for _, child in ipairs(children) do
-			createListHierarchy(child, childrenContainer, indent + 1)
-		end
-	end
+        -- Recursively create GUI list for children with a coroutine to prevent crashing
+        for i, child in ipairs(children) do
+            coroutine.wrap(function()
+                createListHierarchy(child, childrenContainer, indent + 1, i)
+                wait() -- Yield the coroutine for a short duration
+            end)()
+        end
+    end
 end
 
 -- Create a frame to contain the list
@@ -103,7 +123,7 @@ createListHierarchy(game.Workspace, scrollFrame)
 
 -- Connect a function to update the CanvasSize of the scrolling frame
 scrollFrame:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, scrollFrame.UIListLayout.AbsoluteContentSize.Y)
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, scrollFrame.UIListLayout.AbsoluteContentSize.Y * 2)
 end)
 
 -- Create an X button to delete the GUI
@@ -117,5 +137,5 @@ xButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 xButton.BorderSizePixel = 2
 xButton.Parent = listContainer
 xButton.MouseButton1Click:Connect(function()
-	gui:Destroy()
+    gui:Destroy()
 end)
