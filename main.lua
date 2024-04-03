@@ -108,6 +108,7 @@ listContainer.Parent = gui
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Name = "ScrollFrame"
 scrollFrame.Size = UDim2.new(1, -20, 1, -40)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, math.huge)
 scrollFrame.Position = UDim2.new(0, 10, 0, 10)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.ScrollBarThickness = 16
